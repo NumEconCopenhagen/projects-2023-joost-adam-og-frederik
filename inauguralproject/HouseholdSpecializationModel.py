@@ -116,6 +116,11 @@ class HouseholdSpecializationModelClass:
 
     def solve(self,do_print=False):
         """ solve model continously """
+        par = self.par
+        sol = self.sol
+        opt = SimpleNamespace()
+        0<=HM, HF, WF, WM<=24
+
 
         pass    
 
