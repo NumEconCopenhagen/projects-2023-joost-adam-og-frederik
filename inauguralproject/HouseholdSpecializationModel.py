@@ -119,14 +119,31 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
-        0<=HM, HF, WM, WF<=24
-
-
-        pass    
+        #0<=HM, HF, WM, WF<=24
+        def obj(x):
+            return - self.calc_utility(x[0],x[1],x[2],x[3])
+        res = optimize.minimize(obj, x0=[6]*4, method="Nelder-Mead")
+        opt.LM = res.x[0]
+        opt.HM = res.x[1]
+        opt.LF = res.x[2]
+        opt.HF = res.x[3]
+        return opt
+          
 
     def solve_wF_vec(self,discrete=False):
         """ solve model for vector of female wages """
-
+        sol = self.sol
+        par = self.par
+        for it, w in enumerate(par.wF_vec):
+            par.wF = w
+            if discrete== True:
+                res = self.solve_discrete()
+            else:
+                res = self.solve()
+            sol.LM_vec[it] = res.LM
+            sol.LF_vec[it] = res.LF
+            sol.HM_vec[it] = res.HM
+            sol.HF_vec[it] = res.HF
         pass
 
     def run_regression(self):
