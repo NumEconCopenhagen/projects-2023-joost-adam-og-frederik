@@ -119,7 +119,7 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
-        0<=HM, HF, WF, WM<=24
+        0<=HM, HF, WM, WF<=24
 
 
         pass    
