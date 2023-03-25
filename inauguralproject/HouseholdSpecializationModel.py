@@ -169,7 +169,7 @@ class HouseholdSpecializationModelClass:
                                 x0=[0.1,0.1],
                                 method='Nelder-mead'
                                 )
-        return y
+        return x
     
     def est(self, x):
         par = self.par
@@ -184,7 +184,32 @@ class HouseholdSpecializationModelClass:
         dif_all = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2
         return dif_all 
     
-        
+    def alko(self):
+        par = self.par
+        sol = self.sol
+        trials = []
+
+        par.dif_beta0 = (par.beta0_target-sol.beta0)**2
+        par.dif_beta1 = (par.beta1_target-sol.beta1)**2
+        par.eps = 0.01
+
+
+        par.alpha = np.linspace(0,1,20)
+        par.sigma = np.linspace(0,1,20)
+        par.n=0
+        par.max_iter = 500
+
+        while par.n < par.max_iter:
+            sol.con_solve =  self.solve_wF_vec()
+            sol.reg_solve = self.run_regression()
+            trials.append({'alpha':par.alpha,'sigma':par.sigma,'dif_beta0':par.dif_beta0,'dif_beta1':par.dif_beta1})
+
+            
+            if np.abs(par.dif_beta0)<par.eps and np.abs(par.dif_beta1)<par.eps:
+                break
+
+
+
 
        
 
