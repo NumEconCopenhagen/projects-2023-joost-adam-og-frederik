@@ -1,9 +1,9 @@
-# \[Group name\]
+# \[Joost, Adam og Frederik\]
 
 **Group members:**
-- A
-- B
-- C
+- Joost
+- Adam
+- Frederik
 
 This repository contains  
 1. Inaugural project. 
