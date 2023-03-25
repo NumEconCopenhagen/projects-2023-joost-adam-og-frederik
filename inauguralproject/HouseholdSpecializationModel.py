@@ -152,7 +152,7 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
 
-        x = np.log(par.wF_vec)
+        x = np.log(par.wF_vec / par.wM)
         y = np.log(sol.HF_vec/sol.HM_vec)
         A = np.vstack([np.ones(x.size),x]).T
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
@@ -160,4 +160,31 @@ class HouseholdSpecializationModelClass:
     def estimate(self,alpha=None,sigma=None):
         """ estimate alpha and sigma """
 
-        pass
+        par = self.par
+        sol = self.par
+        #par.dif_beta0 = (par.beta0_target - sol.beta0)**2
+        #par.dif_beta1 = (par.beta1_target - sol.beta1)**2
+        obj = lambda x: self.est(x)
+        result = optimize.minimize(obj, 
+                                x0=[0.1,0.1],
+                                method='Nelder-mead'
+                                )
+        return y
+    
+    def est(self, x):
+        par = self.par
+        sol = self.sol
+
+
+        par.alpha = x[0]
+        par.sigma = x[1]
+
+        self.solve_wF_vec()
+        self.run_regression()
+        dif_all = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2
+        return dif_all 
+    
+        
+
+       
+
