@@ -119,7 +119,6 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
-        #0<=HM, HF, WM, WF<=24
         def obj(x):
             return - self.calc_utility(x[0],x[1],x[2],x[3])
         res = optimize.minimize(obj, x0=[6]*4, method="Nelder-Mead")
@@ -157,58 +156,36 @@ class HouseholdSpecializationModelClass:
         A = np.vstack([np.ones(x.size),x]).T
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
     
+
+
     def estimate(self,alpha=None,sigma=None):
         """ estimate alpha and sigma """
 
         par = self.par
         sol = self.par
-        #par.dif_beta0 = (par.beta0_target - sol.beta0)**2
-        #par.dif_beta1 = (par.beta1_target - sol.beta1)**2
-        obj = lambda x: self.est(x)
-        result = optimize.minimize(obj, 
-                                x0=[0.1,0.1],
-                                method='Nelder-mead'
-                                )
-        return x
+        opt = SimpleNamespace()
+
+        
+        #We make a new function, which defines the dif "different"
+        def dif(self, x):
+            par = self.par
+            sol = self.par
+            par.alpha = x[0]
+            par.sigma = x[1]
+            par.alpha = alpha
+            par.sigma = sigma
+            self.solve_wF_vec()
+            self.run_regression()
+            dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+            return dif
+        
+        #We try to minimize the dif function with respect to alpha and sigma
+        result = optimize.minimize(dif, [alpha,sigma], bounds=[(0.01,0.99),(0.01,5)], method='Nelder-Mead')
+        opt.alpha = result.x[0]
+        opt.sigma = result.x[1]
+       
+        return opt
     
-    def est(self, x):
-        par = self.par
-        sol = self.sol
-
-
-        par.alpha = x[0]
-        par.sigma = x[1]
-
-        self.solve_wF_vec()
-        self.run_regression()
-        dif_all = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2
-        return dif_all 
-    
-    def alko(self):
-        par = self.par
-        sol = self.sol
-        trials = []
-
-        par.dif_beta0 = (par.beta0_target-sol.beta0)**2
-        par.dif_beta1 = (par.beta1_target-sol.beta1)**2
-        par.eps = 0.01
-
-
-        par.alpha = np.linspace(0,1,20)
-        par.sigma = np.linspace(0,1,20)
-        par.n=0
-        par.max_iter = 500
-
-        while par.n < par.max_iter:
-            sol.con_solve =  self.solve_wF_vec()
-            sol.reg_solve = self.run_regression()
-            trials.append({'alpha':par.alpha,'sigma':par.sigma,'dif_beta0':par.dif_beta0,'dif_beta1':par.dif_beta1})
-
-            
-            if np.abs(par.dif_beta0)<par.eps and np.abs(par.dif_beta1)<par.eps:
-                break
-
-
 
 
        
