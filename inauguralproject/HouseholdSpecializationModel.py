@@ -167,13 +167,11 @@ class HouseholdSpecializationModelClass:
 
         
         #We make a new function, which defines the dif "different"
-        def dif(self, x):
+        def dif(x):
             par = self.par
-            sol = self.par
+            sol = self.sol
             par.alpha = x[0]
             par.sigma = x[1]
-            par.alpha = alpha
-            par.sigma = sigma
             self.solve_wF_vec()
             self.run_regression()
             dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
