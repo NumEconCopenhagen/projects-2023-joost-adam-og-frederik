@@ -80,4 +80,3 @@ def solve_IS_LM_model(Y_guess, r_guess, C, T, I, G, L, M, P, tol=1e-6, max_iter=
 
     # Return the equilibrium values
     return Y_solution, r_solution
-
