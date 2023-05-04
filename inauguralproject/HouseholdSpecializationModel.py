@@ -20,6 +20,7 @@ class HouseholdSpecializationModelClass:
         par.rho = 2.0
         par.nu = 0.001
         par.epsilon = 1.0
+        par.epsilonL
         par.omega = 0.5 
 
         # c. household production
@@ -185,6 +186,23 @@ class HouseholdSpecializationModelClass:
         return opt
     
 
+    def est_q5(self,sigma=none,nu_f=none,nu_m=none,extended=True):
+        par = self.par
+        sol = self.sol
+        opt = SimpleNamespace()
 
-       
-
+        if extended==False:
+            def dif(x):
+            par = self.par
+            sol = self.sol
+            par.sigma = x[0]
+            self.solve_wF_vec()
+            self.run_regression()
+            dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+            return dif
+        
+            #We try to minimize the dif function with respect to alpha and sigma
+            result = optimize.minimize(dif, [sigma], bounds=[(0.01,0.99),(0.01,5)], method='Nelder-Mead')
+            opt.alpha = result.x[0]
+            opt.sigma = result.x[1]
+        elif extended==True:
