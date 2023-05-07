@@ -1,82 +1,63 @@
-def IS_equation(Y, r, C, T, I, G):
-    """IS curve equation"""
-    return Y - C(Y - T) - I(r) - G
+from scipy import optimize
+import numpy as np
+import matplotlib.pyplot as plt
+from types import SimpleNamespace
+import ipywidgets as widgets
 
-def LM_equation(Y, r, L):
-    """LM curve equation"""
-    return L(Y, r) - M/P
+class IS_LM_Solver:
+    def __init__(self):
+        """setup model"""
 
-def I_prime(r):
-    """Derivative of the investment function"""
-    return -50
+        par = self.par = SimpleNamespace()
 
-def L_prime_Y(Y, r):
-    """Partial derivative of the money demand function with respect to output"""
-    return 0.5
+        # Variables for the IS/LM Model
+        par.Y = 2800  # Initial guess for output, 2,800 billion DKK as of 2022 for Denmark
+        par.r = 0.03  # Initial guess for interest rate, current rate from Nationalbanken
+        par.C = lambda Y: 500 + 0.25 * Y  # Consumption function guess
+        par.T = 1200  # Taxes, Denmark 2022
+        par.I = lambda r: 1500 - 50 * r  # Investment function guess
+        par.G = 620  # Government spending, Denmark 2022
+        par.L = lambda Y, r: 0.5 * Y - 20 * r  # Money demand function
+        par.M = 140  # Money supply, guess of 5 percent of total output
+        par.P = 5  # Price level guess
 
-def L_prime_r(Y, r):
-    """Partial derivative of the money demand function with respect to interest rate"""
-    return -20
-
-def IS_prime_Y(Y, r):
-    """Partial derivative of the IS equation with respect to output"""
-    return 1
-
-def IS_prime_r(Y, r):
-    """Partial derivative of the IS equation with respect to interest rate"""
-    return -1
-
-def LM_prime_Y(Y, r):
-    """Partial derivative of the LM equation with respect to output"""
-    return 1
-
-def LM_prime_r(Y, r):
-    """Partial derivative of the LM equation with respect to interest rate"""
-    return -1
-
-def solve_IS_LM_model(Y_guess, r_guess, C, T, I, G, L, M, P, tol=1e-6, max_iter=100):
-    # Implement the solve_IS_LM function using the Newton-Raphson method
-    def solve_IS_LM(Y_guess, r_guess):
-        # Implement the Newton-Raphson method here
-        Y = Y_guess
-        r = r_guess
-
-        for i in range(max_iter):
-            # Calculate the values of the IS and LM equations and their derivatives
-            IS = IS_equation(Y, r, C, T, I, G)
-            LM = LM_equation(Y, r, L)
-            IS_prime_Y_val = IS_prime_Y(Y, r)
-            IS_prime_r_val = IS_prime_r(Y, r)
-            LM_prime_Y_val = LM_prime_Y(Y, r)
-            LM_prime_r_val = LM_prime_r(Y, r)
-
-            # Calculate the Jacobian matrix
-            J = np.array([[IS_prime_Y_val, IS_prime_r_val], [LM_prime_Y_val, LM_prime_r_val]])
-
-            # Calculate the residuals
-            residuals = np.array([IS, LM])
-
-            # Solve the linear system J * delta = -residuals for delta
-            delta = np.linalg.solve(J, -residuals)
-
-            # Update the values of Y and r
-            Y += delta[0]
-            r += delta[1]
-
-            # Check convergence
-            if np.linalg.norm(delta) < tol:
-                return Y, r
-
-        # If the iteration does not converge within the maximum number of iterations, return None
-        return None, None
-
-    # Call the solve_IS_LM function to get the equilibrium values
-    Y_solution, r_solution = solve_IS_LM(Y_guess, r_guess)
-
-    # Print the equilibrium values
-    if Y_solution is not None:
-        print("Equilibrium output:", Y_solution)
-        print("Equilibrium interest rate:", r_solution)
-
-    # Return the equilibrium values
-    return Y_solution, r_solution
+    def IS_equation(self):
+        """IS curve equation"""
+        par = self.par
+        IS_curve = par.Y - par.C(par.Y - par.T) - par.I(par.r) - par.G
+        return IS_curve
+    
+    def evaluate_IS(self):
+        """Evaluate IS equation at initial values"""
+        result_IS = self.IS_equation()
+        print("Result of IS equation:", result_IS)
+        
+    def LM_equation(self):
+        """LM curve equation"""
+        par = self.par
+        LM_curve = par.L(par.Y, par.r) - par.M/par.P
+        return LM_curve
+    
+    def evaluate_LM(self):
+        """Evaluate LM equation at initial values"""
+        result_LM = self.LM_equation()
+        print("Result of LM equation:", result_LM)
+    
+    def solve_model(self):
+        """Solve the IS/LM model"""
+        par = self.par
+        
+        # Define a function that returns the residuals (i.e. the difference between
+        # the IS and LM equations) for a given value of Y and r
+        def equations(x):
+            Y, r = x
+            eq1 = par.Y - par.C(Y - par.T) - par.I(r) - par.G - Y
+            eq2 = par.L(Y, r) - par.M / par.P
+            return [eq1, eq2]
+        
+        # Use scipy.optimize.root to find the values of Y and r that satisfy the equations
+        solution = optimize.root(equations, [par.Y, par.r])
+        
+        # Store the solution values in the par namespace
+        par.Y, par.r = solution.x
+    
