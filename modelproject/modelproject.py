@@ -13,7 +13,7 @@ class IS_LM_Solver:
         # Variables for the IS/LM Model
         par.Y = 2800  # Initial guess for output, 2,800 billion DKK as of 2022 for Denmark
         par.r = 0.03  # Initial guess for interest rate, current rate from Nationalbanken
-        par.C = lambda Y: 500 + 0.25 * Y  # Consumption function guess
+        par.C = lambda Y: 50 + 0.25 * Y  # Consumption function guess
         par.T = 1200  # Taxes, Denmark 2022
         par.I = lambda r: 1500 - 50 * r  # Investment function guess
         par.G = 620  # Government spending, Denmark 2022
@@ -47,15 +47,14 @@ class IS_LM_Solver:
         """Solve the IS/LM model"""
         par = self.par
         
-        # Define a function that returns the residuals (i.e. the difference between
-        # the IS and LM equations) for a given value of Y and r
+        # Defines a function that returns the residuals (i.e. the difference between the IS and LM equations) for a given value of Y and r
         def equations(x):
             Y, r = x
             eq1 = par.Y - par.C(Y - par.T) - par.I(r) - par.G - Y
             eq2 = par.L(Y, r) - par.M / par.P
             return [eq1, eq2]
         
-        # Use scipy.optimize.root to find the values of Y and r that satisfy the equations
+        # We use scipy.optimize.root to find the values of Y and r that satisfy the equations
         solution = optimize.root(equations, [par.Y, par.r])
         
         # Store the solution values in the par namespace
