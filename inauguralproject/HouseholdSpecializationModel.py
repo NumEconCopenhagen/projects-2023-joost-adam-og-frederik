@@ -18,9 +18,10 @@ class HouseholdSpecializationModelClass:
 
         # b. preferences
         par.rho = 2.0
-        par.nu = 0.001
-        par.epsilon = 1.0
-        par.epsilonL
+        par.nu_M = 0.001
+        par.nu_F = 0.001
+        par.epsilon_M = 1.0
+        par.epsilon_F = 1.0
         par.omega = 0.5 
 
         # c. household production
@@ -70,10 +71,11 @@ class HouseholdSpecializationModelClass:
         utility = np.fmax(Q,1e-8)**(1-par.rho)/(1-par.rho)
 
         # d. disutlity of work
-        epsilon_ = 1+1/par.epsilon
+        epsilon_F_ = 1+1/par.epsilon_F
+        epsilon_M_ = 1+1/par.epsilon_M
         TM = LM+HM
         TF = LF+HF
-        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)
+        disutility = par.nu_M*(TM**epsilon_M_/epsilon_M_)+par.nu_F*(TF**epsilon_F_/epsilon_F_)
         
         return utility - disutility
 
@@ -185,24 +187,45 @@ class HouseholdSpecializationModelClass:
        
         return opt
     
-
-    def est_q5(self,sigma=none,nu_f=none,nu_m=none,extended=True):
+    def estimate_q5(self,sigma=None,epsilon_M=None,epsilon_F=None,extend=True):
         par = self.par
-        sol = self.sol
+        sol = self.par
         opt = SimpleNamespace()
 
-        if extended==False:
+        if extend==True:
+            #We make a new function, which defines the dif "different"
             def dif(x):
-            par = self.par
-            sol = self.sol
-            par.sigma = x[0]
-            self.solve_wF_vec()
-            self.run_regression()
-            dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
-            return dif
+                par = self.par
+                sol = self.sol
+                par.sigma = x[0]
+                par.epsilon_M = x[1]
+                par.epsilon_F = x[2]
+                self.solve_wF_vec()
+                self.run_regression()
+                dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+                return dif
+        
+            #We try to minimize the dif function with respect to alpha and sigma
+            result = optimize.minimize(dif, [sigma,epsilon_F,epsilon_M], bounds=[(0.01,0.99),(0.01,5)], method='Nelder-Mead')
+            opt.sigma = result.x[0]
+            opt.epsilon_M = result.x[1]
+            opt.epsilon_F = result.x[2]
+       
+            return opt
+        
+        elif extend==False:
+            def dif(x):
+                par = self.par
+                sol = self.sol
+                par.sigma = x[0]
+                self.solve_wF_vec()
+                self.run_regression()
+                dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+                return dif
         
             #We try to minimize the dif function with respect to alpha and sigma
             result = optimize.minimize(dif, [sigma], bounds=[(0.01,0.99),(0.01,5)], method='Nelder-Mead')
-            opt.alpha = result.x[0]
-            opt.sigma = result.x[1]
-        elif extended==True:
+            opt.sigma = result.x[0]
+            return opt
+        
+        return opt
