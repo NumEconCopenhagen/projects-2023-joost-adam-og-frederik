@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import ipywidgets as widgets
 
 class OLG_Model:
-    def __init__(self):
+    def __init__(self): #OBS: IKKE ÆNDRET ENDNU!!!
         """setup model"""
 
         par = self.par = SimpleNamespace()
