@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from types import SimpleNamespace
 import ipywidgets as widgets
 
-class IS_LM_Solver:
+class OLG_Model:
     def __init__(self):
         """setup model"""
 
