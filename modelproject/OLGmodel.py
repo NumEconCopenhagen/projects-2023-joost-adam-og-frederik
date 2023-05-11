@@ -61,7 +61,7 @@ class OLGModelClass():
         for varname in allvarnames:
             sim.__dict__[varname] = np.nan*np.ones(par.simT)
 
-    def simulate(self,do_print=True, shock=False, regime='PAYG'):
+    def simulate(self,do_print=True, shock=False, system='PAYG'):
         """ simulate model """
 
         t0 = time.time()
@@ -70,13 +70,13 @@ class OLGModelClass():
         sim = self.sim
         
         # a. initial values
-        sim.K_lag[0] = par.K_lag_ini
+        sim.K_lag[0] = par.K_lag_ini 
 
         # b. iterate
         for t in range(par.simT):
             
             # i. simulate before s
-            simulate_before_s(par,sim,t,shock,system)
+            simulate_before_s(par,sim,t,shock, system)
 
             if t == par.simT-1: continue          
 
