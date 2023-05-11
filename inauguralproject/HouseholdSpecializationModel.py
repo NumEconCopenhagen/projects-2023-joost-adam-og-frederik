@@ -222,7 +222,7 @@ class HouseholdSpecializationModelClass:
                 dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
                 return dif
         
-            result = optimize.minimize(dif, [sigma], bounds=[(0.01,0.5)], method='Nelder-Mead')
+            result = optimize.minimize(dif, [sigma], bounds=[(0.01,2.0)], method='Nelder-Mead')
             opt.sigma = result.x[0]
 
             return opt
