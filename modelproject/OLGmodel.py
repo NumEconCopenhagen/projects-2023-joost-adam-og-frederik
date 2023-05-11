@@ -40,7 +40,7 @@ class OLGModelClass():
 
         # d. misc
         par.K_lag_ini = 1.0 # initial capital stock
-        par.B_lag_ini = 0.0 # initial government debt
+        par.w_ini = 1 # initial government debt
         par.simT = 50 # length of simulation
         par.L_ini = 1.0
 
@@ -61,7 +61,7 @@ class OLGModelClass():
         for varname in allvarnames:
             sim.__dict__[varname] = np.nan*np.ones(par.simT)
 
-    def simulate(self,do_print=True):
+    def simulate(self,do_print=True, shock=False, regime='PAYG'):
         """ simulate model """
 
         t0 = time.time()
@@ -176,7 +176,7 @@ def simulate_before_s(par,sim,t, shock=False, system='PAYG'):
     elif par.production_function == 'cobb-douglas':
 
         # i. production
-        sim.Y[t] = sim.K_lag[t]**par.alpha * (1.0)**(1-par.alpha)
+        sim.Y[t] = sim.K_lag[t]**par.alpha * sim.L[t]**(1-par.alpha)
 
         # ii. factor prices
         sim.rk[t] = par.alpha * sim.K_lag[t]**(par.alpha-1) * (1.0)**(1-par.alpha)
@@ -195,9 +195,12 @@ def simulate_before_s(par,sim,t, shock=False, system='PAYG'):
 
     if system=="PAYG": #PAYG
         sim.C2[t] = (1+sim.rt[t])*sim.K_lag[t]+sim.L[t]*par.tau_w*sim.w[t]
+
+    if system=="FF": #FF
+        sim.C2[t] = (1+sim.rt[t])*(sim.K_lag[t]+par.tau_w*sim.w[t-1])
     
     # d. government
-    sim.T[t] = par.tau_r*sim.r[t]*(sim.K_lag[t]+sim.B_lag[t]) + par.tau_w*sim.w[t]
+    sim.T[t] = par.tau_r*sim.r[t]*(sim.K_lag[t]) + par.tau_w*sim.w[t]
 
 
 def simulate_after_s(par,sim,t,s):
@@ -212,5 +215,19 @@ def simulate_after_s(par,sim,t,s):
 
     # c. utility
     sim.U[t] = (sim.C1[t]**(1-par.sigma))/(1-par.sigma) + par.beta*((sim.C2[t+1]**(1-par.sigma))/(1-par.sigma))
+
+def plot_interact():
+    widgets.interact(plot,
+                
+                 a=widgets.FloatSlider(
+                     description="a", min=1, max=5, step=0.25, value=1),
+                 b=widgets.FloatSlider(
+                     description="b", min=1, max=5, step=0.25, value=1),
+                 x0=widgets.FloatSlider(
+                     description="X", min=1, max=50, step=0.5, value=20),
+                 c2=widgets.FloatSlider(
+                     description="c2", min=0, max=5, step=0.1, value=0)
+
+    );
         
         
