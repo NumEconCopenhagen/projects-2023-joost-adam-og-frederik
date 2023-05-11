@@ -6,14 +6,14 @@ from types import SimpleNamespace
 import ipywidgets as widgets
 
 class OLG_Model:
-    def __init__(self): #OBS: IKKE ÆNDRET ENDNU!!!
+    def __init__(self):
         """setup model"""
 
         self.par = SimpleNamespace()
         self.setup()
 
     def setup(self):
-        """Define parameters"""
+        """Define parameters as SymPy symbols"""
         par = self.par
         
         #Setting up parameters for the utility function
@@ -39,7 +39,6 @@ class OLG_Model:
         par.wt = sm.symbols('w_t')
         par.wt1 = sm.symbols('w_{t+1}')
         par.dt1 = sm.symbols('d_{t+1}')
-        par.n = sm.symbols('n')
         par.tau = sm.symbols('tau')
         par.st = sm.symbols('s_t')
         par.lamb = sm.symbols('lambda')
@@ -51,4 +50,11 @@ class OLG_Model:
     
     def BC(self): #BC=BudgetConstraint
         """Define the budget constraint"""
+        par = self.par
+
+        #Budget constraints in the two time periods
+        BC1 = sm.Eq(par.c1t, (1-par.tau) * par.wt -par.st)
+        BC2 = sm.Eq(par.c2t, par.st * par.rt1 + par.tau * par.wt1)
+
+        
         
