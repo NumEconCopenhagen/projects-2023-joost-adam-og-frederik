@@ -205,8 +205,7 @@ class HouseholdSpecializationModelClass:
                 dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
                 return dif
         
-            #We try to minimize the dif function with respect to alpha and sigma
-            result = optimize.minimize(dif, [sigma,epsilon_F,epsilon_M], bounds=[(0.01,0.99),(0.01,5)], method='Nelder-Mead')
+            result = optimize.minimize(dif, [sigma,epsilon_F,epsilon_M], bounds=[(0.01,0.5),(0.01,5.0),(0.01,5.0)], method='Nelder-Mead')
             opt.sigma = result.x[0]
             opt.epsilon_M = result.x[1]
             opt.epsilon_F = result.x[2]
@@ -223,8 +222,7 @@ class HouseholdSpecializationModelClass:
                 dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
                 return dif
         
-            #We try to minimize the dif function with respect to alpha and sigma
-            result = optimize.minimize(dif, [sigma], bounds=[(0.01,0.99),(0.01,5)], method='Nelder-Mead')
+            result = optimize.minimize(dif, [sigma], bounds=[(0.01,5)], method='Nelder-Mead')
             opt.sigma = result.x[0]
             return opt
         
