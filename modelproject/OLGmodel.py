@@ -31,15 +31,15 @@ class OLGModelClass():
         # b. firms
         par.production_function = 'ces'
         par.alpha = 0.30 # capital weight
-        par.theta = 0.05 # substitution parameter
-        par.delta = 0.50 # depreciation rate
+        par.theta = 0.0 # substitution parameter
+        par.delta = 1 # depreciation rate
 
         # c. government
-        par.tau_w = 0.10 # labor income tax
-        par.tau_r = 0.20 # capital income tax
+        par.tau_w = 0.0 # labor income tax
+        par.tau_r = 0.0 # capital income tax
 
         # d. misc
-        par.K_lag_ini = 1.0 # initial capital stock
+        par.K_lag_ini = 1 # initial capital stock
         par.w_ini = 1 # initial government debt
         par.simT = 50 # length of simulation
         par.L_ini = 1.0
