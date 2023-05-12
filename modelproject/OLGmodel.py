@@ -1,233 +1,72 @@
 from types import SimpleNamespace
-import time
 import numpy as np
-from scipy import optimize
+import sympy as sm 
+import matplotlib.pyplot as plt
 
-class OLGModelClass():
+#We did not have time to finsh this
 
-    def __init__(self,do_print=True):
-        """ create the model """
-
-        if do_print: print('initializing the model:')
-
+#We define the OLG model
+class OLGmodelclass(): 
+    def __init__(self):
+        "Creating namespace for parameters"
         self.par = SimpleNamespace()
-        self.sim = SimpleNamespace()
-
-        if do_print: print('calling .setup()')
         self.setup()
 
-        if do_print: print('calling .allocate()')
-        self.allocate()
-    
     def setup(self):
-        """ baseline parameters """
+        "Setup model"
+        par=self.par
+        
 
+        #Define parameters and variables 
+        par.alpha = sm.symbols('alpha')
+        par.k_t = sm.symbols('k_t')
+        par.k_t1 = sm.symbols('k_{t+1}')
+        par.A = sm.symbols('A')
+        par.w_t = sm.symbols('w_t')
+        par.w_t1 = sm.symbols('w_{t+1}') 
+        par.r_t1 = sm.symbols('r_{t+1}')
+        par.s_t = sm.symbols('s_t') 
+        par.tau = sm.symbols('tau')
+        par.c_1t = sm.symbols('c_1t') 
+        par.c_2t = sm.symbols('c_{2t+1}') 
+        par.rho = sm.symbols('rho') 
+        par.lambdaa = sm.symbols('lambda')
+ 
+
+
+    def utility_func(self): 
+        #Defining utility function
         par = self.par
 
-        # a. household
-        par.sigma = 2.0 # CRRA coefficient
-        par.beta = 1/1.40 # discount factor
-
-        # b. firms
-        par.production_function = 'ces'
-        par.alpha = 0.30 # capital weight
-        par.theta = 0.0 # substitution parameter
-        par.delta = 1 # depreciation rate
-
-        # c. government
-        par.tau_w = 0.0 # labor income tax
-        par.tau_r = 0.0 # capital income tax
-
-        # d. misc
-        par.K_lag_ini = 1 # initial capital stock
-        par.w_ini = 1 # initial government debt
-        par.simT = 50 # length of simulation
-        par.L_ini = 1.0
-
-    def allocate(self):
-        """ allocate arrays for simulation """
-        
-        par = self.par
-        sim = self.sim
-
-        # a. list of variables
-        household = ['U','C1','C2']
-        firm = ['K','Y','K_lag' 'L']
-        prices = ['w','w_lag','rk','rb','r','rt']
-        government = ['T']
-
-        # b. allocate
-        allvarnames = household + firm + prices + government
-        for varname in allvarnames:
-            sim.__dict__[varname] = np.nan*np.ones(par.simT)
-
-    def simulate(self,do_print=True, shock=False, system='PAYG'):
-        """ simulate model """
-
-        t0 = time.time()
-
-        par = self.par
-        sim = self.sim
-        
-        # a. initial values
-        sim.K_lag[0] = par.K_lag_ini 
-
-        # b. iterate
-        for t in range(par.simT):
-            
-            # i. simulate before s
-            simulate_before_s(par,sim,t,shock, system)
-
-            if t == par.simT-1: continue          
-
-            # i. find bracket to search
-            s_min,s_max = find_s_bracket(par,sim,t)
-
-            # ii. find optimal s
-            obj = lambda s: calc_euler_error(s,par,sim,t=t)
-            result = optimize.root_scalar(obj,bracket=(s_min,s_max),method='bisect')
-            s = result.root
-
-            # iii. simulate after s
-            simulate_after_s(par,sim,t,s)
-
-        if do_print: print(f'simulation done in {time.time()-t0:.2f} secs')
-
-def find_s_bracket(par,sim,t,maxiter=500,do_print=False):
-    """ find bracket for s to search in """
-
-    # a. maximum bracket
-    s_min = 0.0 + 1e-8 # save almost nothing
-    s_max = 1.0 - 1e-8 # save almost everything
-
-    # b. saving a lot is always possible 
-    value = calc_euler_error(s_max,par,sim,t)
-    sign_max = np.sign(value)
-    if do_print: print(f'euler-error for s = {s_max:12.8f} = {value:12.8f}')
-
-    # c. find bracket      
-    lower = s_min
-    upper = s_max
-
-    it = 0
-    while it < maxiter:
-                
-        # i. midpoint and value
-        s = (lower+upper)/2 # midpoint
-        value = calc_euler_error(s,par,sim,t)
-
-        if do_print: print(f'euler-error for s = {s:12.8f} = {value:12.8f}')
-
-        # ii. check conditions
-        valid = not np.isnan(value)
-        correct_sign = np.sign(value)*sign_max < 0
-        
-        # iii. next step
-        if valid and correct_sign: # found!
-            s_min = s
-            s_max = upper
-            if do_print: 
-                print(f'bracket to search in with opposite signed errors:')
-                print(f'[{s_min:12.8f}-{s_max:12.8f}]')
-            return s_min,s_max
-        elif not valid: # too low s -> increase lower bound
-            lower = s
-        else: # too high s -> increase upper bound
-            upper = s
-
-        # iv. increment
-        it += 1
-
-    raise Exception('cannot find bracket for s')
-
-def calc_euler_error(s,par,sim,t):
-    """ target function for finding s with bisection """
-
-    # a. simulate forward
-    simulate_after_s(par,sim,t,s)
-    simulate_before_s(par,sim,t+1) # next period
-
-    # c. Euler equation
-    LHS = sim.C1[t]**(-par.sigma)
-    RHS = (1+sim.rt[t+1])*par.beta * sim.C2[t+1]**(-par.sigma)
-
-    return LHS-RHS
-
-def simulate_before_s(par,sim,t, shock=False, system='PAYG'):
-    """ simulate forward """
-
-    sim.L[t]=par.L_ini
-    if shock==True:
-        sim.L[1]=par.L_ini*1.5
-
-    if t > 0:
-        sim.K_lag[t] = sim.K[t-1]
-
-    # a. production and factor prices
-    if par.production_function == 'ces':
-
-        # i. production
-        sim.Y[t] = ( par.alpha*sim.K_lag[t]**(-par.theta) + (1-par.alpha)*(1.0)**(-par.theta) )**(-1.0/par.theta)
-
-        # ii. factor prices
-        sim.rk[t] = par.alpha*sim.K_lag[t]**(-par.theta-1) * sim.Y[t]**(1.0+par.theta)
-        sim.w[t] = (1-par.alpha)*(1.0)**(-par.theta-1) * sim.Y[t]**(1.0+par.theta)
-
-    elif par.production_function == 'cobb-douglas':
-
-        # i. production
-        sim.Y[t] = sim.K_lag[t]**par.alpha * sim.L[t]**(1-par.alpha)
-
-        # ii. factor prices
-        sim.rk[t] = par.alpha * sim.K_lag[t]**(par.alpha-1) * (1.0)**(1-par.alpha)
-        sim.w[t] = (1-par.alpha) * sim.K_lag[t]**(par.alpha) * (1.0)**(-par.alpha)
-
-    else:
-
-        raise NotImplementedError('unknown type of production function')
-
-    # b. no-arbitrage and after-tax return
-    sim.r[t] = sim.rk[t]-par.delta # after-depreciation return
-    sim.rt[t] = (1-par.tau_r)*sim.r[t] # after-tax return
-
-    # c. consumption
-    # sim.C2[t] = (1+sim.rt[t])*(sim.K_lag[t]+sim.B_lag[t])
-
-    if system=="PAYG": #PAYG
-        sim.C2[t] = (1+sim.rt[t])*sim.K_lag[t]+sim.L[t]*par.tau_w*sim.w[t]
-
-    if system=="FF": #FF
-        sim.C2[t] = (1+sim.rt[t])*(sim.K_lag[t]+par.tau_w*sim.w[t-1])
+        return sm.log(par.c_1t)+1/(1+par.rho)*sm.log(par.c_2t)
     
-    # d. government
-    sim.T[t] = par.tau_r*sim.r[t]*(sim.K_lag[t]) + par.tau_w*sim.w[t]
+    def budget_constraints(self):
+       #combine the budget constraints for Euler equation 
+        par = self.par
+        bud_con_1 = sm.Eq(par.c_1t+par.s_t, (1-par.tau)*par.w_t)
+        bud_con_2 = sm.Eq(par.c_2t, (1+par.r_t1)*par.s_t+(1+par.n)*par.tau*par.w_t1)
+
+        # Isolate s_t in bud_con_2 and then combine it with bud_con_1
+        bud_con_2_iso = sm.solve(bud_con_2, par.s_t)
+        comb = bud_con_1.subs(par.s_t, bud_con_st2_sub[0])
+
+        return sp.solve(lifetimeconstraint, (1-par.tau)*par.w_t)[0]-(1-par.tau)*par.w_t
 
 
-def simulate_after_s(par,sim,t,s):
-    """ simulate forward """
 
-    # a. consumption of young
-    sim.C1[t] = (1-par.tau_w)*sim.w[t]*(1.0-s)
 
-    # b. end-of-period stocks
-    I = sim.Y[t] - sim.C1[t] - sim.C2[t] - sim.G[t]
-    sim.K[t] = (1-par.delta)*sim.K_lag[t] + I
 
-    # c. utility
-    sim.U[t] = (sim.C1[t]**(1-par.sigma))/(1-par.sigma) + par.beta*((sim.C2[t+1]**(1-par.sigma))/(1-par.sigma))
 
-def plot_interact():
-    widgets.interact(plot,
-                
-                 a=widgets.FloatSlider(
-                     description="a", min=1, max=5, step=0.25, value=1),
-                 b=widgets.FloatSlider(
-                     description="b", min=1, max=5, step=0.25, value=1),
-                 x0=widgets.FloatSlider(
-                     description="X", min=1, max=50, step=0.5, value=20),
-                 c2=widgets.FloatSlider(
-                     description="c2", min=0, max=5, step=0.1, value=0)
-
-    );
         
         
+
+
+
+
+
+
+
+
+
+
+
