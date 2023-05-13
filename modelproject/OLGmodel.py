@@ -13,10 +13,9 @@ class OLGmodelclass():
         self.setup()
 
     def setup(self):
-        "Setup model"
-        par=self.par
         
-
+        self.par = SimpleNamespace()
+        par=self.par
         #Define parameters and variables 
         par.alpha = sm.symbols('alpha')
         par.k_t = sm.symbols('k_t')
