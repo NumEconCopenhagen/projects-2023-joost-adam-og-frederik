@@ -1,6 +1,6 @@
 # Model analysis project
 
-Our project is titled **IS/LM Model** and is about solving the IS/LM model numerically.
+Our model analysis project is titled **OLG Model with extension**. We will solve an OLG-model with a Pay-As-You-Go system analytically and numerically, and extend the model with a Fully-Funded scheme.
 
 The **results** of the project can be seen from running [modelproject.ipynb](modelproject.ipynb).
 
