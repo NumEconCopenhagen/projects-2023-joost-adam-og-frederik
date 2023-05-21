@@ -177,7 +177,7 @@ class HouseholdSpecializationModelClass:
             par.sigma = x[1]
             self.solve_wF_vec()
             self.run_regression()
-            dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+            dif = (sol.beta0 - par.beta0_target)**2 + (sol.beta1 - par.beta1_target)**2 
             return dif
         
         #We try to minimize the dif function with respect to alpha and sigma
@@ -202,7 +202,7 @@ class HouseholdSpecializationModelClass:
                 par.epsilon_F = x[2]
                 self.solve_wF_vec()
                 self.run_regression()
-                dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+                dif = (sol.beta0 - par.beta0_target)**2 + (sol.beta1 - par.beta1_target)**2
                 return dif
         
             result = optimize.minimize(dif, [sigma,epsilon_F,epsilon_M], bounds=[(0.01,2.0),(0.01,2.0),(0.01,2.0)], method='Nelder-Mead')
@@ -219,7 +219,7 @@ class HouseholdSpecializationModelClass:
                 par.sigma = x[0]
                 self.solve_wF_vec()
                 self.run_regression()
-                dif = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2 
+                dif = (sol.beta0 - par.beta0_target)**2 + (sol.beta1 - par.beta1_target)**2  
                 return dif
         
             result = optimize.minimize(dif, [sigma], bounds=[(0.01,2.0)], method='Nelder-Mead')
