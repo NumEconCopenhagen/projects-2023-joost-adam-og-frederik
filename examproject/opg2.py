@@ -47,7 +47,8 @@ class opg2_class:
             sol.c_mark_vec[it] = res.c_mark
         return sol.c_mark_vec
     
-    def utility_B(self):
+    #Numerical 
+    def utility_B_num(self):
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
@@ -56,17 +57,32 @@ class opg2_class:
         U_B = par.e_B - sol.c_mark_vec + (par.p_vec*sol.c_mark_vec)**(1-1/par.epsilon)/(1-1/par.epsilon)
         return U_B
     
+    def solve_U_B_num(self):
+        par = self.par
+        sol = self.sol
+        opt = SimpleNamespace()
+        def obj_B_num(x):
+            par.p_vec = x[0]
+            return - self.utility_B_num(x[0])
+        result = optimize.minimize(obj_B_num, x0=1.5, method="Nelder-Mead", bounds=(1,2))
+        opt.p = result.x[0]
+        return opt
+
+    #Analytical
+    def utility_B(self,p):
+        par = self.par
+        sol = self.sol
+        U_A = par.e_A - p**(-par.epsilon) + (p*p**(-par.epsilon))**(1-1/par.epsilon)/(1-1/par.epsilon)
+        return U_A
+    
     def solve_U_B(self):
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
         def obj_B(x):
-            par.p_vec = x[0]
             return - self.utility_B(x[0])
-        result = optimize.minimize(obj_B, x0=1.5, method="Nelder-Mead", bounds=(1,2))
-        opt.p = result.x[0]
+        res = optimize.minimize(obj_B, x0=1, method="Nelder-Mead")
+        opt.p = res.x[0]
         return opt
-
-
 
 
