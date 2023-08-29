@@ -28,14 +28,13 @@ class opg2_class:
         U_A = par.e_A - par.p*c_mark + c_mark**(1-1/par.epsilon)/(1-1/par.epsilon)
         return U_A
     
-    def solve(self):
-        """ solve model continously """
+    def solve_U_A(self):
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
-        def obj(x):
+        def obj_A(x):
             return - self.utility_A(x[0])
-        res = optimize.minimize(obj, x0=1, method="Nelder-Mead")
+        res = optimize.minimize(obj_A, x0=1, method="Nelder-Mead")
         opt.c_mark = res.x[0]
         return opt
     
@@ -44,9 +43,30 @@ class opg2_class:
         par = self.par
         for it, p in enumerate(par.p_vec):
             par.p = p
-            res = self.solve()
+            res = self.solve_U_A()
             sol.c_mark_vec[it] = res.c_mark
-        return
+        return sol.c_mark_vec
     
+    def utility_B(self):
+        par = self.par
+        sol = self.sol
+        opt = SimpleNamespace()
+        self.solve_U_A()
+        self.solve_p_vec()
+        U_B = par.e_B - sol.c_mark_vec + (par.p_vec*sol.c_mark_vec)**(1-1/par.epsilon)/(1-1/par.epsilon)
+        return U_B
+    
+    def solve_U_B(self):
+        par = self.par
+        sol = self.sol
+        opt = SimpleNamespace()
+        def obj_B(x):
+            par.p_vec = x[0]
+            return - self.utility_B(x[0])
+        result = optimize.minimize(obj_B, x0=1.5, method="Nelder-Mead", bounds=(1,2))
+        opt.p = result.x[0]
+        return opt
+
+
 
 
