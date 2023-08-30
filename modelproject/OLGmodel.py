@@ -33,7 +33,7 @@ class OLG_Class():
         # d. misc
         par.k_PAYG_lag_ini = 1.0 # initial capital stock
         par.k_FF_lag_ini = 1.0 # initial capital stock
-        par.simT = 50 # length of simulation
+        par.simT = 40 # length of simulation
 
     def allocate(self):
         """ allocate arrays for simulation """
