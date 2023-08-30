@@ -61,11 +61,14 @@ class OLG_Class():
         # a. initial values
         sim.k_lag[0] = par.k_lag_ini
 
+        # Set an initial value for s
+        s = 0.5
+
         # b. iterate
         for t in range(par.simT):
             
             # i. simulate before s
-            simulate_before_s(par,sim,t)
+            simulate_before_s(s, par, sim, t)
 
             if t == par.simT-1: continue          
 
@@ -134,7 +137,7 @@ def calc_euler_error(s,par,sim,t):
 
     # a. simulate forward
     simulate_after_s(par,sim,t,s)
-    simulate_before_s(par,sim,t+1) # next period
+    simulate_before_s(par,sim,t+1,s) # next period
 
     # c. Euler equation
     LHS = sim.C1[t]
@@ -142,7 +145,7 @@ def calc_euler_error(s,par,sim,t):
 
     return LHS-RHS
 
-def simulate_before_s(par,sim,t):
+def simulate_before_s(par,sim,t,s):
     """ simulate forward """
 
     if t > 0:
@@ -156,7 +159,7 @@ def simulate_before_s(par,sim,t):
     sim.k[t]=(1-par.alpha)*(1-par.tau)*par.alpha/((2+par.rho)*par.alpha+(1+par.rho)*(1-par.alpha)*par.tau)*par.A*sim.k_lag[t]**par.alpha
 
     # c. consumption
-    sim.C2[t] = (1+sim.r[t])*sim.k[t]+sim.w[t]*par.tau
+    sim.C2[t] = (1+sim.r[t])*s+sim.w[t]*par.tau
 
 
 def simulate_after_s(par,sim,t,s):
