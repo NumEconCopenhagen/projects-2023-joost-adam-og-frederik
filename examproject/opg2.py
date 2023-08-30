@@ -16,20 +16,18 @@ class opg2_class:
         par.epsilon = 10.0
         par.e_A = 10
         par.e_B = 10
-        par.p = 1
-        par.eta = np.linspace(1000, 10, 990)
-        par.eta_ = (1-1/par.eta)
+        par.eta = 10
 
         par.p_vec = np.linspace(1,2,10000)
 
-        self.combined_list = []
-
         sol.c_mark_vec = np.zeros(par.p_vec.size)
+        sol.c_mark_q3 = 0  # Initialize c_mark_q3
+        sol.p_star = 0  # Initialize p_star
 
     def utility_A(self,c_mark):
         par = self.par
         sol = self.sol
-        U_A = par.e_A - par.p*c_mark + c_mark**(1-1/par.epsilon)/(1-1/par.epsilon)
+        U_A = par.e_A - par.p*c_mark + (c_mark**(1-1/par.epsilon))/(1-1/par.epsilon)
         return U_A
     
     def solve_U_A(self):
@@ -50,47 +48,10 @@ class opg2_class:
             res = self.solve_U_A()
             sol.c_mark_vec[it] = res.c_mark
 
-        self.combined_list = [(p, num) for p, num in zip(par.p_vec, sol.c_mark_vec)]
-
         return sol.c_mark_vec
-    
-    #list forsog
-    def utility_B_list(self):
-        par = self.par
-        sol = self.sol
-        for p_val, num in self.combined_list:
-            p = p_val
-            c_mark = num
-            U_B = par.e_B - p * c_mark + c_mark**(1 - 1 / par.epsilon) / (1 - 1 / par.epsilon)
-            sol.U_B[p_val] = U_B
-        return sol.U_B
 
 
-    #Numerical 
-    # Numerical utility function for B
-    def utility_B_num(self):
-        par = self.par
-        sol = self.sol
-        U_B = par.e_B - sol.c_mark_vec + (par.p_vec * sol.c_mark_vec)**(1 - 1 / par.epsilon) / (1 - 1 / par.epsilon)
-        return U_B
-
-    # Solve for optimal p using numerical optimization
-    def solve_U_B_num(self):
-        par = self.par
-        sol = self.sol
-        opt = SimpleNamespace()
-        
-        def obj_B_num(p):
-            par.p_vec = p
-            return -self.utility_B_num()
-
-        result = optimize.minimize(obj_B_num, method="Nelder-Mead", bounds=[(1, 2)])
-        opt.p = result.x
-        return opt
-
-
-
-    #Analytical
+    #Analytical method
     def utility_B(self,p):
         par = self.par
         sol = self.sol
@@ -108,20 +69,39 @@ class opg2_class:
         return opt
     
 
-    def utility_q3(self,c_mark_q3):
+
+    #Question 3
+    def utility_A_q3(self, c_mark_q3, p):
         par = self.par
-        sol = self.sol
-        U_A_q3 = (par.e_A - par.p*c_mark_q3)**par.eta_/par.eta_ + c_mark_q3**(1-1/par.epsilon)/(1-1/par.epsilon)
+        U_A_q3 = (par.e_A - p * c_mark_q3)**(1 - 1 / par.eta) / (1 - 1 / par.eta) + c_mark_q3**(1 - 1 / par.epsilon) / (1 - 1 / par.epsilon)
         return U_A_q3
     
     def solve_U_A_q3(self):
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
-        def obj_A(x):
-            return - self.utility_A(x[0])
-        res = optimize.minimize(obj_A, x0=1, method="Nelder-Mead")
-        opt.c_mark = res.x[0]
-        return opt
+        def obj_A_q3(x):
+            return -self.utility_A_q3(sol.c_mark_q3, x[0])
+        res_first = optimize.minimize(obj_A_q3, x0=1, method="Nelder-Mead")
+        sol.c_mark_q3 = res_first.x[0]
+        return sol
+    
+    def utility_B_q3(self, c_mark_q3, p):
+        par = self.par
+        sol = self.sol
+        U_B_q3 = (par.e_B - p * c_mark_q3)**(1 - 1 / par.eta) / (1 - 1 / par.eta) + c_mark_q3**(1 - 1 / par.epsilon) / (1 - 1 / par.epsilon)
+        return U_B_q3
+    
+    def solve_U_B_q3(self):
+        par = self.par
+        sol = self.sol
+        opt = SimpleNamespace()
+        def obj_B_q3(x):
+            return -self.utility_B_q3(sol.c_mark_q3, x[0])
+        
+        # Find optimal p that maximizes U_B_q3 given c_mark_q3
+        res_last = optimize.minimize(obj_B_q3, x0=1, method="Nelder-Mead")
+        sol.p_star = res_last.x[0]
+        return sol
 
 
