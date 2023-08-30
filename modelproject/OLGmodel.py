@@ -31,7 +31,8 @@ class OLG_Class():
         par.A = 10
 
         # d. misc
-        par.k_lag_ini = 1.0 # initial capital stock
+        par.k_PAYG_lag_ini = 1.0 # initial capital stock
+        par.k_FF_lag_ini = 1.0 # initial capital stock
         par.simT = 50 # length of simulation
 
     def allocate(self):
@@ -42,7 +43,7 @@ class OLG_Class():
 
         # a. list of variables
         household = ['C1','C2']
-        firm = ['k','k_lag']
+        firm = ['k_PAYG', 'k_PAYG_lag', 'k_FF' , 'k_FF_lag']
         prices = ['w','r']
 
         # b. allocate
@@ -59,7 +60,8 @@ class OLG_Class():
         sim = self.sim
         
         # a. initial values
-        sim.k_lag[0] = par.k_lag_ini
+        sim.k_PAYG_lag[0] = par.k_PAYG_lag_ini
+        sim.k_FF_lag[0] = par.k_FF_lag_ini
 
         # Set an initial value for s
         s = 0.41
@@ -68,106 +70,39 @@ class OLG_Class():
         for t in range(par.simT):
             
             # i. simulate before s
-            simulate_before_s(par, sim, t, s)
+            simulate_1(par, sim, t, s)
 
             if t == par.simT-1: continue          
 
-            # i. find bracket to search
-            s_min,s_max = find_s_bracket(par,sim,t)
-
-            # ii. find optimal s
-            obj = lambda s: calc_euler_error(s,par,sim,t=t)
-            result = optimize.root_scalar(obj,bracket=(s_min,s_max),method='bisect')
-            s = result.root
-
             # iii. simulate after s
-            simulate_after_s(par,sim,t,s)
+            simulate_2(par,sim,t,s)
 
         if do_print: print(f'simulation done in {time.time()-t0:.2f} secs')
 
-def find_s_bracket(par,sim,t,maxiter=500,do_print=False):
-    """ find bracket for s to search in """
+def simulate_1(par,sim,t,s):
+        """ simulate forward """
 
-    # a. maximum bracket
-    s_min = 0.0 + 1e-8 # save almost nothing
-    s_max = 1.0 - 1e-8 # save almost everything
+        if t > 0:
+            sim.k_PAYG_lag[t] = sim.k_PAYG[t-1]
+            sim.k_FF_lag[t] = sim.k_FF[t-1]
 
-    # b. saving a lot is always possible 
-    value = calc_euler_error(s_max,par,sim,t)
-    sign_max = np.sign(value)
-    if do_print: print(f'euler-error for s = {s_max:12.8f} = {value:12.8f}')
+        # ii. factor prices
+        sim.r[t] = par.alpha * sim.k_PAYG_lag[t]**(par.alpha-1) * (1.0)**(1-par.alpha)
+        sim.w[t] = (1-par.alpha) * sim.k_PAYG_lag[t]**(par.alpha) * (1.0)**(-par.alpha)
 
-    # c. find bracket      
-    lower = s_min
-    upper = s_max
+        #capital
+        sim.k_PAYG[t]=(1-par.alpha)*(1-par.tau)*par.alpha/((2+par.rho)*par.alpha+(1+par.rho)*(1-par.alpha)*par.tau)*par.A*sim.k_PAYG_lag[t]**par.alpha
+        sim.k_FF[t]=((1-par.rho*par.tau-2*par.tau)/(2+par.rho))*(1-par.alpha)*par.A*sim.k_FF_lag[t]**par.alpha+par.tau*(1-par.alpha)*par.A*sim.k_FF_lag[t]**par.alpha
 
-    it = 0
-    while it < maxiter:
-                
-        # i. midpoint and value
-        s = (lower+upper)/2 # midpoint
-        value = calc_euler_error(s,par,sim,t)
-
-        if do_print: print(f'euler-error for s = {s:12.8f} = {value:12.8f}')
-
-        # ii. check conditions
-        valid = not np.isnan(value)
-        correct_sign = np.sign(value)*sign_max < 0
-        
-        # iii. next step
-        if valid and correct_sign: # found!
-            s_min = s
-            s_max = upper
-            if do_print: 
-                print(f'bracket to search in with opposite signed errors:')
-                print(f'[{s_min:12.8f}-{s_max:12.8f}]')
-            return s_min,s_max
-        elif not valid: # too low s -> increase lower bound
-            lower = s
-        else: # too high s -> increase upper bound
-            upper = s
-
-        # iv. increment
-        it += 1
-
-    raise Exception('cannot find bracket for s')
-
-def calc_euler_error(s,par,sim,t):
-    """ target function for finding s with bisection """
-
-    # a. simulate forward
-    simulate_after_s(par,sim,t,s)
-    simulate_before_s(par,sim,t+1,s) # next period
-
-    # c. Euler equation
-    LHS = sim.C1[t]
-    RHS = sim.C2[t+1]*(par.rho+1)/(sim.r[t+1]+1)
-
-    return LHS-RHS
-
-def simulate_before_s(par,sim,t,s):
-    """ simulate forward """
-
-    if t > 0:
-        sim.k_lag[t] = sim.k[t-1]
-
-    # ii. factor prices
-    sim.r[t] = par.alpha * sim.k_lag[t]**(par.alpha-1) * (1.0)**(1-par.alpha)
-    sim.w[t] = (1-par.alpha) * sim.k_lag[t]**(par.alpha) * (1.0)**(-par.alpha)
-
-    #capital
-    sim.k[t]=(1-par.alpha)*(1-par.tau)*par.alpha/((2+par.rho)*par.alpha+(1+par.rho)*(1-par.alpha)*par.tau)*par.A*sim.k_lag[t]**par.alpha
-
-    # c. consumption
-    sim.C2[t] = (1+sim.r[t])*s+sim.w[t]*par.tau
+        # c. consumption
+        sim.C2[t] = (1+sim.r[t])*s+sim.w[t]*par.tau    
 
 
-def simulate_after_s(par,sim,t,s):
-    """ simulate forward """
+def simulate_2(par,sim,t,s):
+        """ simulate forward """
 
-    # a. consumption of young
-    sim.C1[t] = (1-par.tau)*sim.w[t]-s
-
+        # a. consumption of young
+        sim.C1[t] = (1-par.tau)*sim.w[t]-s
     
 
 
