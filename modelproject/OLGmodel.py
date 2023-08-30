@@ -62,13 +62,13 @@ class OLG_Class():
         sim.k_lag[0] = par.k_lag_ini
 
         # Set an initial value for s
-        s = 0.5
+        s = 0.41
 
         # b. iterate
         for t in range(par.simT):
             
             # i. simulate before s
-            simulate_before_s(s, par, sim, t)
+            simulate_before_s(par, sim, t, s)
 
             if t == par.simT-1: continue          
 
